@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spotify Popularity Predictor</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #121212;
+            color: #fff;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            padding: 40px 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 750px;
+        }
+
+        h1 {
+            color: #1db954;
+            font-size: 1.8rem;
+            margin-bottom: 6px;
+        }
+
+        p.subtitle {
+            color: #aaa;
+            font-size: 0.9rem;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: #1e1e1e;
+            border-radius: 16px;
+            padding: 28px;
+            margin-bottom: 20px;
+        }
+
+        .card-title {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #1db954;
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .field { display: flex; flex-direction: column; gap: 8px; }
+
+        label {
+            font-size: 0.78rem;
+            color: #aaa;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .slider-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        input[type="range"] {
+            flex: 1;
+            height: 4px;
+            border-radius: 2px;
+            background: #333;
+            outline: none;
+            cursor: pointer;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #1db954;
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+
+        input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.2); }
+
+        input[type="range"]::-moz-range-thumb {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #1db954;
+            cursor: pointer;
+            border: none;
+        }
+
+        .slider-value {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #1db954;
+            min-width: 42px;
+            text-align: right;
+        }
+
+        select {
+            background: #2a2a2a;
+            border: 1px solid #333;
+            border-radius: 8px;
+            color: #fff;
+            padding: 10px 12px;
+            font-size: 0.95rem;
+            outline: none;
+            cursor: pointer;
+            width: 100%;
+        }
+
+        select:focus { border-color: #1db954; }
+
+        /* Genre Modal */
+        .genre-btn {
+            background: #2a2a2a;
+            border: 1px solid #333;
+            border-radius: 8px;
+            color: #fff;
+            padding: 10px 14px;
+            font-size: 0.95rem;
+            cursor: pointer;
+            width: 100%;
+            text-align: left;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: border-color 0.2s;
+        }
+
+        .genre-btn:hover { border-color: #1db954; }
+        .genre-btn .arrow { color: #aaa; font-size: 0.8rem; }
+
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.75);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-overlay.active { display: flex; }
+
+        .modal {
+            background: #1e1e1e;
+            border-radius: 16px;
+            width: 90%;
+            max-width: 560px;
+            max-height: 80vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .modal-header {
+            padding: 20px 24px 16px;
+            border-bottom: 1px solid #2a2a2a;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h3 { font-size: 1rem; color: #fff; }
+
+        .modal-close {
+            background: none;
+            border: none;
+            color: #aaa;
+            font-size: 1.4rem;
+            cursor: pointer;
+            line-height: 1;
+            padding: 0;
+        }
+
+        .modal-close:hover { color: #fff; }
+
+        .modal-search {
+            padding: 12px 24px;
+            border-bottom: 1px solid #2a2a2a;
+        }
+
+        .modal-search input {
+            width: 100%;
+            background: #2a2a2a;
+            border: 1px solid #333;
+            border-radius: 8px;
+            color: #fff;
+            padding: 9px 12px;
+            font-size: 0.9rem;
+            outline: none;
+        }
+
+        .modal-search input:focus { border-color: #1db954; }
+
+        .modal-list {
+            overflow-y: auto;
+            flex: 1;
+            padding: 8px 12px;
+        }
+
+        .modal-list::-webkit-scrollbar { width: 6px; }
+        .modal-list::-webkit-scrollbar-track { background: transparent; }
+        .modal-list::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+
+        .genre-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 11px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+
+        .genre-item:hover { background: #2a2a2a; }
+        .genre-item.selected { background: #1a3d2b; }
+
+        .genre-name { font-size: 0.9rem; color: #fff; text-transform: capitalize; }
+
+        .genre-score {
+            font-size: 0.8rem;
+            color: #1db954;
+            font-weight: 600;
+            background: #1a3d2b;
+            padding: 2px 8px;
+            border-radius: 20px;
+        }
+
+        button[type="submit"] {
+            width: 100%;
+            padding: 14px;
+            background: #1db954;
+            color: #000;
+            font-size: 1rem;
+            font-weight: bold;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: background 0.2s;
+            margin-top: 8px;
+        }
+
+        button[type="submit"]:hover { background: #17a349; }
+
+        .result {
+            margin-top: 20px;
+            background: #1e1e1e;
+            border-left: 4px solid #1db954;
+            border-radius: 8px;
+            padding: 20px 24px;
+        }
+
+        .result-label { font-size: 0.8rem; color: #aaa; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
+        .result-score { font-size: 2.4rem; font-weight: 700; color: #1db954; }
+        .result-score span { font-size: 1rem; color: #aaa; font-weight: 400; }
+
+        .full-width { grid-column: span 2; }
+
+        @media (max-width: 540px) {
+            .grid { grid-template-columns: 1fr; }
+            .full-width { grid-column: span 1; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>🎵 Spotify Popularity Predictor</h1>
+    <p class="subtitle">Adjust the audio features below to predict a track's popularity score (0–100).</p>
+
+    <form method="POST">
+        {% csrf_token %}
+
+        <!-- Audio Features -->
+        <div class="card">
+            <div class="card-title">Audio Features</div>
+            <div class="grid">
+
+                <div class="field">
+                    <label>Danceability</label>
+                    <div class="slider-row">
+                        <input type="range" name="danceability" min="0" max="1" step="0.01" value="0.5"
+                            oninput="document.getElementById('v_danceability').textContent=parseFloat(this.value).toFixed(2)">
+                        <span class="slider-value" id="v_danceability">0.50</span>
+                    </div>
+                </div>
+
+                <div class="field">
+                    <label>Energy</label>
+                    <div class="slider-row">
+                        <input type="range" name="energy" min="0" max="1" step="0.01" value="0.5"
+                            oninput="document.getElementById('v_energy').textContent=parseFloat(this.value).toFixed(2)">
+                        <span class="slider-value" id="v_energy">0.50</span>
+                    </div>
+                </div>
+
+                <div class="field">
+                    <label>Loudness (dB)</label>
+                    <div class="slider-row">
+                        <input type="range" name="loudness" min="-60" max="0" step="0.1" value="-10"
+                            oninput="document.getElementById('v_loudness').textContent=parseFloat(this.value).toFixed(1)">
+                        <span class="slider-value" id="v_loudness">-10.0</span>
+                    </div>
+                </div>
+
+                <div class="field">
+                    <label>Speechiness</label>
+                    <div class="slider-row">
+                        <input type="range" name="speechiness" min="0" max="1" step="0.01" value="0.05"
+                            oninput="document.getElementById('v_speechiness').textContent=parseFloat(this.value).toFixed(2)">
+                        <span class="slider-value" id="v_speechiness">0.05</span>
+                    </div>
+                </div>
+
+                <div class="field">
+                    <label>Acousticness</label>
+                    <div class="slider-row">
+                        <input type="range" name="acousticness" min="0" max="1" step="0.01" value="0.3"
+                            oninput="document.getElementById('v_acousticness').textContent=parseFloat(this.value).toFixed(2)">
+                        <span class="slider-value" id="v_acousticness">0.30</span>
+                    </div>
+                </div>
+
+                <div class="field">
+                    <label>Instrumentalness</label>
+                    <div class="slider-row">
+                        <input type="range" name="instrumentalness" min="0" max="1" step="0.01" value="0.0"
+                            oninput="document.getElementById('v_instrumentalness').textContent=parseFloat(this.value).toFixed(2)">
+                        <span class="slider-value" id="v_instrumentalness">0.00</span>
+                    </div>
+                </div>
+
+                <div class="field">
+                    <label>Liveness</label>
+                    <div class="slider-row">
+                        <input type="range" name="liveness" min="0" max="1" step="0.01" value="0.15"
+                            oninput="document.getElementById('v_liveness').textContent=parseFloat(this.value).toFixed(2)">
+                        <span class="slider-value" id="v_liveness">0.15</span>
+                    </div>
+                </div>
+
+                <div class="field">
+                    <label>Valence</label>
+                    <div class="slider-row">
+                        <input type="range" name="valence" min="0" max="1" step="0.01" value="0.5"
+                            oninput="document.getElementById('v_valence').textContent=parseFloat(this.value).toFixed(2)">
+                        <span class="slider-value" id="v_valence">0.50</span>
+                    </div>
+                </div>
+
+                <div class="field">
+                    <label>Tempo (BPM)</label>
+                    <div class="slider-row">
+                        <input type="range" name="tempo" min="0" max="250" step="1" value="120"
+                            oninput="document.getElementById('v_tempo').textContent=this.value">
+                        <span class="slider-value" id="v_tempo">120</span>
+                    </div>
+                </div>
+
+                <div class="field">
+                    <label>Duration (minutes)</label>
+                    <div class="slider-row">
+                        <input type="range" name="duration_min" min="0.5" max="10" step="0.1" value="3.5"
+                            oninput="document.getElementById('v_duration').textContent=parseFloat(this.value).toFixed(1)">
+                        <span class="slider-value" id="v_duration">3.5</span>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Track Properties -->
+        <div class="card">
+            <div class="card-title">Track Properties</div>
+            <div class="grid">
+
+                <div class="field">
+                    <label>Key</label>
+                    <div class="slider-row">
+                        <input type="range" name="key" min="0" max="11" step="1" value="5"
+                            oninput="document.getElementById('v_key').textContent=this.value">
+                        <span class="slider-value" id="v_key">5</span>
+                    </div>
+                </div>
+
+                <div class="field">
+                    <label>Mode</label>
+                    <select name="mode">
+                        <option value="1">Major</option>
+                        <option value="0">Minor</option>
+                    </select>
+                </div>
+
+                <div class="field">
+                    <label>Time Signature</label>
+                    <select name="time_signature">
+                        <option value="4">4/4</option>
+                        <option value="3">3/4</option>
+                        <option value="5">5/4</option>
+                        <option value="1">1/4</option>
+                    </select>
+                </div>
+
+                <div class="field">
+                    <label>Explicit</label>
+                    <select name="explicit">
+                        <option value="0">No</option>
+                        <option value="1">Yes</option>
+                    </select>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Genre -->
+        <div class="card">
+            <div class="card-title">Genre</div>
+            <div class="field">
+                <label>Select Genre</label>
+                <button type="button" class="genre-btn" onclick="openGenreModal()">
+                    <span id="genre-label">Click to select a genre...</span>
+                    <span class="arrow">▼</span>
+                </button>
+                <input type="hidden" name="genre_encoded" id="genre_encoded" value="35.0">
+            </div>
+        </div>
+
+        <button type="submit">Predict Popularity</button>
+    </form>
+
+    {% if prediction is not None %}
+    <div class="result">
+        <div class="result-label">Predicted Popularity Score</div>
+        <div class="result-score">{{ prediction }} <span>/ 100</span></div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Genre Modal -->
+<div class="modal-overlay" id="genreModal">
+    <div class="modal">
+        <div class="modal-header">
+            <h3>Select a Genre</h3>
+            <button class="modal-close" onclick="closeGenreModal()">×</button>
+        </div>
+        <div class="modal-search">
+            <input type="text" id="genreSearch" placeholder="Search genres..." oninput="filterGenres(this.value)">
+        </div>
+        <div class="modal-list" id="genreList"></div>
+    </div>
+</div>
+
+<script>
+    const genres = [
+        {name: "acoustic", score: 24.3},
+        {name: "afrobeat", score: 41.2},
+        {name: "alt-rock", score: 31.5},
+        {name: "alternative", score: 36.8},
+        {name: "ambient", score: 18.7},
+        {name: "anime", score: 29.4},
+        {name: "black-metal", score: 11.2},
+        {name: "bluegrass", score: 22.6},
+        {name: "blues", score: 25.1},
+        {name: "bossanova", score: 20.3},
+        {name: "brazil", score: 30.7},
+        {name: "breakbeat", score: 22.9},
+        {name: "british", score: 35.4},
+        {name: "cantopop", score: 38.2},
+        {name: "chicago-house", score: 19.8},
+        {name: "children", score: 27.6},
+        {name: "chill", score: 34.5},
+        {name: "classical", score: 18.4},
+        {name: "club", score: 28.3},
+        {name: "comedy", score: 21.5},
+        {name: "country", score: 42.7},
+        {name: "dance", score: 44.1},
+        {name: "dancehall", score: 39.8},
+        {name: "death-metal", score: 12.3},
+        {name: "deep-house", score: 23.6},
+        {name: "detroit-techno", score: 16.4},
+        {name: "disco", score: 31.2},
+        {name: "disney", score: 37.9},
+        {name: "drum-and-bass", score: 20.8},
+        {name: "dub", score: 18.2},
+        {name: "dubstep", score: 25.7},
+        {name: "edm", score: 35.3},
+        {name: "electro", score: 24.8},
+        {name: "electronic", score: 27.4},
+        {name: "emo", score: 28.9},
+        {name: "folk", score: 26.3},
+        {name: "forro", score: 33.1},
+        {name: "french", score: 22.4},
+        {name: "funk", score: 30.6},
+        {name: "garage", score: 23.5},
+        {name: "german", score: 19.7},
+        {name: "gospel", score: 32.4},
+        {name: "goth", score: 17.8},
+        {name: "grindcore", score: 9.4},
+        {name: "groove", score: 31.8},
+        {name: "grunge", score: 29.2},
+        {name: "guitar", score: 21.6},
+        {name: "happy", score: 36.2},
+        {name: "hard-rock", score: 30.4},
+        {name: "hardcore", score: 14.7},
+        {name: "hardstyle", score: 18.9},
+        {name: "heavy-metal", score: 16.5},
+        {name: "hip-hop", score: 52.1},
+        {name: "holidays", score: 34.8},
+        {name: "honky-tonk", score: 24.1},
+        {name: "house", score: 32.7},
+        {name: "idm", score: 14.3},
+        {name: "indian", score: 26.8},
+        {name: "indie", score: 31.4},
+        {name: "indie-pop", score: 38.6},
+        {name: "industrial", score: 15.2},
+        {name: "iranian", score: 22.7},
+        {name: "j-dance", score: 33.5},
+        {name: "j-idol", score: 28.4},
+        {name: "j-pop", score: 36.9},
+        {name: "j-rock", score: 27.3},
+        {name: "jazz", score: 23.8},
+        {name: "k-pop", score: 55.4},
+        {name: "kids", score: 29.1},
+        {name: "latin", score: 48.3},
+        {name: "latino", score: 46.7},
+        {name: "malay", score: 31.6},
+        {name: "mandopop", score: 37.4},
+        {name: "metal", score: 18.3},
+        {name: "metal-misc", score: 13.6},
+        {name: "metalcore", score: 20.1},
+        {name: "minimal-techno", score: 14.8},
+        {name: "movies", score: 28.7},
+        {name: "mpb", score: 25.4},
+        {name: "new-age", score: 16.9},
+        {name: "new-release", score: 42.3},
+        {name: "opera", score: 17.6},
+        {name: "pagode", score: 30.2},
+        {name: "party", score: 39.5},
+        {name: "philippines-opm", score: 34.7},
+        {name: "piano", score: 22.1},
+        {name: "pop", score: 58.7},
+        {name: "pop-film", score: 41.8},
+        {name: "post-dubstep", score: 21.3},
+        {name: "power-pop", score: 26.9},
+        {name: "progressive-house", score: 22.8},
+        {name: "psych-rock", score: 24.6},
+        {name: "punk", score: 23.4},
+        {name: "punk-rock", score: 25.8},
+        {name: "r-n-b", score: 49.2},
+        {name: "rainy-day", score: 27.5},
+        {name: "reggae", score: 33.6},
+        {name: "reggaeton", score: 50.8},
+        {name: "road-trip", score: 35.9},
+        {name: "rock", score: 37.2},
+        {name: "rock-n-roll", score: 28.5},
+        {name: "rockabilly", score: 22.3},
+        {name: "romance", score: 31.7},
+        {name: "sad", score: 29.8},
+        {name: "salsa", score: 38.4},
+        {name: "samba", score: 32.9},
+        {name: "sertanejo", score: 44.6},
+        {name: "show-tunes", score: 26.1},
+        {name: "singer-songwriter", score: 30.3},
+        {name: "ska", score: 21.7},
+        {name: "sleep", score: 19.4},
+        {name: "songwriter", score: 28.6},
+        {name: "soul", score: 34.2},
+        {name: "soundtracks", score: 29.7},
+        {name: "spanish", score: 33.8},
+        {name: "study", score: 20.6},
+        {name: "summer", score: 37.6},
+        {name: "swedish", score: 27.9},
+        {name: "synth-pop", score: 32.1},
+        {name: "tango", score: 21.9},
+        {name: "techno", score: 17.3},
+        {name: "trance", score: 19.6},
+        {name: "trip-hop", score: 23.2},
+        {name: "turkish", score: 29.3},
+        {name: "work-out", score: 33.4},
+        {name: "world-music", score: 24.9}
+    ];
+
+    let selectedGenre = null;
+
+    function renderGenres(list) {
+        const container = document.getElementById('genreList');
+        container.innerHTML = '';
+        list.forEach(g => {
+            const item = document.createElement('div');
+            item.className = 'genre-item' + (selectedGenre && selectedGenre.name === g.name ? ' selected' : '');
+            item.innerHTML = `<span class="genre-name">${g.name}</span><span class="genre-score">${g.score.toFixed(1)}</span>`;
+            item.onclick = () => selectGenre(g);
+            container.appendChild(item);
+        });
+    }
+
+    function filterGenres(query) {
+        const filtered = genres.filter(g => g.name.includes(query.toLowerCase()));
+        renderGenres(filtered);
+    }
+
+    function selectGenre(g) {
+        selectedGenre = g;
+        document.getElementById('genre_encoded').value = g.score.toFixed(1);
+        document.getElementById('genre-label').textContent = g.name + ' (' + g.score.toFixed(1) + ')';
+        closeGenreModal();
+    }
+
+    function openGenreModal() {
+        document.getElementById('genreSearch').value = '';
+        renderGenres(genres);
+        document.getElementById('genreModal').classList.add('active');
+    }
+
+    function closeGenreModal() {
+        document.getElementById('genreModal').classList.remove('active');
+    }
+
+    document.getElementById('genreModal').addEventListener('click', function(e) {
+        if (e.target === this) closeGenreModal();
+    });
+
+    renderGenres(genres);
+</script>
+</body>
+</html>
